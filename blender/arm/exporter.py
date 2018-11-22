@@ -416,7 +416,7 @@ class ArmoryExporter:
         deltaSclAnimated = [False, False, False]
 
         mode = bobject.rotation_mode
-        sampledAnimation = ArmoryExporter.sample_animation_flag or mode == "QUATERNION" or mode == "AXIS_ANGLE"
+        sampledAnimation = mode == "QUATERNION" or mode == "AXIS_ANGLE"
 
         if not sampledAnimation and bobject.animation_data and bobject.type != 'ARMATURE':
             action = bobject.animation_data.action
@@ -623,7 +623,7 @@ class ArmoryExporter:
         o['transform']['values'] = self.write_matrix(transform)
 
         curve_array = self.collect_bone_animation(armature, bone.name)
-        animation = len(curve_array) != 0 or ArmoryExporter.sample_animation_flag
+        animation = len(curve_array) != 0
 
         if animation and pose_bone:
             begin_frame, end_frame = int(action.frame_range[0]), int(action.frame_range[1])
@@ -1575,9 +1575,6 @@ class ArmoryExporter:
         if ArmoryExporter.option_mesh_per_file:
             fp = self.get_meshes_file_path('mesh_' + oid, compressed=self.is_compress(bobject.data))
             assets.add(fp)
-            # if hasattr(bobject.data, 'arm_sdfgen') and bobject.data.arm_sdfgen:
-                # sdf_path = fp.replace('/mesh_', '/sdf_')
-                # assets.add(sdf_path)
             if self.is_mesh_cached(bobject) == True and os.path.exists(fp):
                 return
         else:
@@ -1763,9 +1760,7 @@ class ArmoryExporter:
                 o['shadows_bias'] *= 1 / (o['shadowmap_size'] / 1024) # Less bias for bigger maps
         if (objtype == 'POINT' or objtype == 'SPOT') and objref.shadow_soft_size > 0.1:
             o['light_size'] = objref.shadow_soft_size * 10 # Match to Cycles
-        gapi = arm.utils.get_gapi()
-        mobile_mat = rpdat.arm_material_model == 'Mobile' or rpdat.arm_material_model == 'Solid'
-        if objtype == 'POINT' and not mobile_mat and objref.arm_shadows_cubemap:
+        if objtype == 'POINT' and rpdat.arm_shadows_cubemap:
             o['fov'] = 1.5708 # pi/2
             o['shadowmap_cube'] = True
             o['shadows_bias'] *= 2.0
@@ -1800,7 +1795,7 @@ class ArmoryExporter:
                     break
         else:
             o['color'] = [objref.color[0], objref.color[1], objref.color[2]]
-            o['strength'] = 1000.0 * 0.026
+            o['strength'] = 100.0 * 0.026
             o['type'] = 'point'
 
         self.output['light_datas'].append(o)
@@ -2394,8 +2389,7 @@ class ArmoryExporter:
 
         # Create Viewport camera
         if bpy.data.worlds['Arm'].arm_play_camera != 'Scene':
-            log.warn('Creating viewport camera')
-            self.create_default_camera("ARMViewportCamera", is_viewport_camera=True)
+            self.create_default_camera(is_viewport_camera=True)
             self.camera_spawned = True
 
         # No camera found
@@ -2404,8 +2398,7 @@ class ArmoryExporter:
 
         # No camera found, create a default one
         if (len(self.output['camera_datas']) == 0 and len(bpy.data.cameras) == 0) or not self.camera_spawned:
-            log.warn('Creating default camera')
-            self.create_default_camera("DefaultCamera")
+            self.create_default_camera()
 
         # Scene root traits
         if wrd.arm_physics != 'Disabled' and ArmoryExporter.export_physics:
@@ -2470,7 +2463,7 @@ class ArmoryExporter:
         print('Scene built in ' + str(time.time() - profile_time))
         return {'FINISHED'}
 
-    def create_default_camera(self, camera_name="DefaultCamera", is_viewport_camera=False):
+    def create_default_camera(self, is_viewport_camera=False):
         o = {}
         o['name'] = 'DefaultCamera'
         o['near_plane'] = 0.1
@@ -2609,7 +2602,6 @@ class ArmoryExporter:
             ArmoryExporter.import_traits = [] # Referenced traits
         ArmoryExporter.option_mesh_only = False
         ArmoryExporter.option_mesh_per_file = True
-        ArmoryExporter.sample_animation_flag = wrd.arm_sampled_animation
 
         # Used for material shader export and khafile
         ArmoryExporter.mesh_context = 'mesh'

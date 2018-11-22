@@ -31,17 +31,14 @@ def update_preset(self, context):
         rpdat.rp_volumetriclight = False
         rpdat.rp_ssgi = 'SSAO'
         rpdat.rp_ssr = False
-        rpdat.rp_dfrs = False
-        rpdat.rp_dfao = False
-        rpdat.rp_dfgi = False
         rpdat.rp_bloom = False
         rpdat.rp_eyeadapt = False
         rpdat.rp_motionblur = 'Off'
         rpdat.arm_rp_resolution = 'Display'
         rpdat.arm_texture_filter = 'Anisotropic'
-        rpdat.arm_diffuse_model = 'Lambert'
         rpdat.arm_radiance = True
         rpdat.arm_radiance_sky = True
+        rpdat.arm_shadows_cubemap = True
     elif self.rp_preset == 'VR':
         rpdat.rp_renderer = 'Forward'
         rpdat.rp_depthprepass = False
@@ -66,17 +63,14 @@ def update_preset(self, context):
         rpdat.rp_volumetriclight = False
         rpdat.rp_ssgi = 'Off'
         rpdat.rp_ssr = False
-        rpdat.rp_dfrs = False
-        rpdat.rp_dfao = False
-        rpdat.rp_dfgi = False
         rpdat.rp_bloom = False
         rpdat.rp_eyeadapt = False
         rpdat.rp_motionblur = 'Off'
         rpdat.arm_rp_resolution = 'Display'
         rpdat.arm_texture_filter = 'Point'
-        rpdat.arm_diffuse_model = 'Lambert'
         rpdat.arm_radiance = True
         rpdat.arm_radiance_sky = True
+        rpdat.arm_shadows_cubemap = True
     elif self.rp_preset == 'Mobile':
         rpdat.rp_renderer = 'Forward'
         rpdat.rp_depthprepass = False
@@ -101,17 +95,14 @@ def update_preset(self, context):
         rpdat.rp_volumetriclight = False
         rpdat.rp_ssgi = 'Off'
         rpdat.rp_ssr = False
-        rpdat.rp_dfrs = False
-        rpdat.rp_dfao = False
-        rpdat.rp_dfgi = False
         rpdat.rp_bloom = False
         rpdat.rp_eyeadapt = False
         rpdat.rp_motionblur = 'Off'
         rpdat.arm_rp_resolution = 'Display'
         rpdat.arm_texture_filter = 'Linear'
-        rpdat.arm_diffuse_model = 'Lambert'
         rpdat.arm_radiance = False
         rpdat.arm_radiance_sky = False
+        rpdat.arm_shadows_cubemap = False
     elif self.rp_preset == 'Max':
         rpdat.rp_renderer = 'Deferred'
         rpdat.rp_shadowmap = '8192'
@@ -139,18 +130,15 @@ def update_preset(self, context):
         rpdat.rp_ssgi = 'RTGI'
         rpdat.arm_ssrs = False
         rpdat.rp_ssr = True
-        rpdat.rp_dfrs = False
-        rpdat.rp_dfao = False
-        rpdat.rp_dfgi = False
         rpdat.rp_bloom = True
         rpdat.rp_eyeadapt = False
         rpdat.rp_motionblur = 'Off'
         rpdat.arm_rp_resolution = 'Display'
         rpdat.arm_material_model = 'Full'
         rpdat.arm_texture_filter = 'Anisotropic'
-        rpdat.arm_diffuse_model = 'Lambert'
         rpdat.arm_radiance = True
         rpdat.arm_radiance_sky = True
+        rpdat.arm_shadows_cubemap = True
     elif self.rp_preset == '2D/Baked':
         rpdat.rp_renderer = 'Forward'
         rpdat.rp_depthprepass = False
@@ -175,17 +163,14 @@ def update_preset(self, context):
         rpdat.rp_volumetriclight = False
         rpdat.rp_ssgi = 'Off'
         rpdat.rp_ssr = False
-        rpdat.rp_dfrs = False
-        rpdat.rp_dfao = False
-        rpdat.rp_dfgi = False
         rpdat.rp_bloom = False
         rpdat.rp_eyeadapt = False
         rpdat.rp_motionblur = 'Off'
         rpdat.arm_rp_resolution = 'Display'
         rpdat.arm_texture_filter = 'Linear'
-        rpdat.arm_diffuse_model = 'Lambert'
         rpdat.arm_radiance = False
         rpdat.arm_radiance_sky = False
+        rpdat.arm_shadows_cubemap = False
     update_renderpath(self, context)
 
 def update_renderpath(self, context):
@@ -256,8 +241,8 @@ class ArmRPListItem(bpy.types.PropertyGroup):
     rp_driver_list = CollectionProperty(type=bpy.types.PropertyGroup)
     rp_driver = StringProperty(name="Driver", default="Armory", update=assets.invalidate_compiled_data)
     rp_renderer = EnumProperty(
-        items=[('Forward', 'Forward', 'Forward'),
-               ('Deferred', 'Deferred', 'Deferred'),
+        items=[('Forward', 'Forward Clustered', 'Forward'),
+               ('Deferred', 'Deferred Clustered', 'Deferred'),
                # ('Raytracer', 'Raytracer', 'Raytracer'),
                ],
         name="Renderer", description="Renderer type", default='Deferred', update=update_renderpath)
@@ -317,9 +302,6 @@ class ArmRPListItem(bpy.types.PropertyGroup):
                ('RTGI', 'RTGI', 'Ray-traced global illumination')
                ],
         name="SSGI", description="Screen space global illumination", default='SSAO', update=update_renderpath)
-    rp_dfao = BoolProperty(name="DFAO", description="Distance field ambient occlusion", default=False)
-    rp_dfrs = BoolProperty(name="DFRS", description="Distance field ray-traced shadows", default=False)
-    rp_dfgi = BoolProperty(name="DFGI", description="Distance field global illumination", default=False)
     rp_bloom = BoolProperty(name="Bloom", description="Bloom processing", default=False, update=update_renderpath)
     rp_eyeadapt = BoolProperty(name="Eye Adaptation", description="Auto-exposure based on histogram", default=False, update=update_renderpath)
     rp_motionblur = EnumProperty(
@@ -392,6 +374,7 @@ class ArmRPListItem(bpy.types.PropertyGroup):
         name="Soft Shadows", description="Soft shadows with variable penumbra (spot and non-cascaded sun light supported)", default='Off', update=assets.invalidate_shader_cache)
     arm_soft_shadows_penumbra = IntProperty(name="Penumbra", description="Variable penumbra scale", default=1, min=0, max=10, update=assets.invalidate_shader_cache)
     arm_soft_shadows_distance = FloatProperty(name="Distance", description="Variable penumbra distance", default=1.0, min=0, max=10, update=assets.invalidate_shader_cache)
+    arm_shadows_cubemap = BoolProperty(name="Cubemap", description="Use cubemap to capture point light shadows", default=True)
     arm_ssrs = BoolProperty(name="SSRS", description="Screen-space ray-traced shadows", default=False, update=assets.invalidate_shader_cache)
     arm_texture_filter = EnumProperty(
         items=[('Anisotropic', 'Anisotropic', 'Anisotropic'),
@@ -405,11 +388,6 @@ class ArmRPListItem(bpy.types.PropertyGroup):
                ('Solid', 'Solid', 'Solid'),
                ],
         name="Materials", description="Material builder", default='Full', update=update_material_model)
-    arm_diffuse_model = EnumProperty(
-        items=[('Lambert', 'Lambert', 'Lambert'),
-               ('OrenNayar', 'OrenNayar', 'OrenNayar'),
-               ],
-        name="Diffuse", description="Diffuse model", default='Lambert', update=assets.invalidate_shader_cache)
     arm_rp_displacement = EnumProperty(
         items=[('Off', 'Off', 'Off'),
                ('Vertex', 'Vertex', 'Vertex'),
@@ -431,7 +409,6 @@ class ArmRPListItem(bpy.types.PropertyGroup):
     rp_dynres = BoolProperty(name="Dynamic Resolution", description="Dynamic resolution scaling for performance", default=False, update=update_renderpath)
     arm_ssr_half_res = BoolProperty(name="Half Res", description="Trace in half resolution", default=True, update=update_renderpath)
     rp_ssr_z_only = BoolProperty(name="Z Only", description="Trace in Z axis only", default=False, update=update_renderpath)
-    rp_voxelgi_hdr = BoolProperty(name="HDR Voxels", description="Store voxels in RGBA64 instead of RGBA32", default=False, update=update_renderpath)
     rp_voxelgi_relight = BoolProperty(name="Relight", description="Relight voxels when light is moved", default=True, update=update_renderpath)
     arm_voxelgi_dimensions = FloatProperty(name="Dimensions", description="Voxelization bounds",default=16, update=assets.invalidate_shader_cache)
     arm_voxelgi_revoxelize = BoolProperty(name="Revoxelize", description="Revoxelize scene each frame", default=False, update=assets.invalidate_shader_cache)
@@ -443,7 +420,6 @@ class ArmRPListItem(bpy.types.PropertyGroup):
     arm_voxelgi_camera = BoolProperty(name="Dynamic Camera", description="Use camera as voxelization origin", default=False, update=assets.invalidate_shader_cache)
     # arm_voxelgi_anisotropic = BoolProperty(name="Anisotropic", description="Use anisotropic voxels", default=False, update=update_renderpath)
     arm_voxelgi_shadows = BoolProperty(name="Trace Shadows", description="Use voxels to render shadows", default=False, update=update_renderpath)
-    arm_voxelgi_refraction = BoolProperty(name="Trace Refraction", description="Use voxels to render refraction", default=False, update=update_renderpath)
     arm_samples_per_pixel = EnumProperty(
         items=[('1', '1', '1'),
                ('2', '2', '2'),
@@ -572,7 +548,7 @@ class ArmRPListNewItem(bpy.types.Operator):
 
     def draw(self,context):
         layout = self.layout
-        layout.prop(bpy.data.worlds['Arm'], 'rp_preset')
+        layout.prop(bpy.data.worlds['Arm'], 'rp_preset', expand=True)
 
     def execute(self, context):
         wrd = bpy.data.worlds['Arm']
@@ -605,11 +581,53 @@ class ArmRPListDeleteItem(bpy.types.Operator):
         mdata.arm_rplist_index = index
         return{'FINISHED'}
 
+class ArmRPListMoveItem(bpy.types.Operator):
+    # Move an item in the list
+    bl_idname = "arm_rplist.move_item"
+    bl_label = "Move an item in the list"
+    direction = bpy.props.EnumProperty(
+                items=(
+                    ('UP', 'Up', ""),
+                    ('DOWN', 'Down', ""),))
+
+    def move_index(self):
+        # Move index of an item render queue while clamping it
+        mdata = bpy.data.worlds['Arm']
+        index = mdata.arm_rplist_index
+        list_length = len(mdata.arm_rplist) - 1
+        new_index = 0
+
+        if self.direction == 'UP':
+            new_index = index - 1
+        elif self.direction == 'DOWN':
+            new_index = index + 1
+
+        new_index = max(0, min(new_index, list_length))
+        mdata.arm_rplist.move(index, new_index)
+        mdata.arm_rplist_index = new_index
+
+    def execute(self, context):
+        mdata = bpy.data.worlds['Arm']
+        list = mdata.arm_rplist
+        index = mdata.arm_rplist_index
+
+        if self.direction == 'DOWN':
+            neighbor = index + 1
+            self.move_index()
+
+        elif self.direction == 'UP':
+            neighbor = index - 1
+            self.move_index()
+        else:
+            return{'CANCELLED'}
+        return{'FINISHED'}
+
 def register():
     bpy.utils.register_class(ArmRPListItem)
     bpy.utils.register_class(ArmRPList)
     bpy.utils.register_class(ArmRPListNewItem)
     bpy.utils.register_class(ArmRPListDeleteItem)
+    bpy.utils.register_class(ArmRPListMoveItem)
 
     bpy.types.World.arm_rplist = CollectionProperty(type=ArmRPListItem)
     bpy.types.World.arm_rplist_index = IntProperty(name="Index for my_list", default=0, update=update_renderpath)
@@ -619,3 +637,4 @@ def unregister():
     bpy.utils.unregister_class(ArmRPList)
     bpy.utils.unregister_class(ArmRPListNewItem)
     bpy.utils.unregister_class(ArmRPListDeleteItem)
+    bpy.utils.unregister_class(ArmRPListMoveItem)

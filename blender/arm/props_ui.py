@@ -129,8 +129,6 @@ class DataPropsPanel(bpy.types.Panel):
             row = layout.row(align=True)
             row.prop(obj.data, 'arm_dynamic_usage')
             row.prop(obj.data, 'arm_compress')
-            # if obj.type == 'MESH':
-                # layout.prop(obj.data, 'arm_sdfgen')
             layout.operator("arm.invalidate_cache")
         elif obj.type == 'LIGHT' or obj.type == 'LAMP': # TODO: LAMP is deprecated
             row = layout.row(align=True)
@@ -140,9 +138,6 @@ class DataPropsPanel(bpy.types.Panel):
             col = row.column()
             col.prop(obj.data, 'arm_fov')
             col.prop(obj.data, 'arm_shadows_bias')
-            if obj.data.type == 'POINT':
-                layout.prop(obj.data, 'arm_shadows_cubemap')
-            layout.prop(wrd, 'arm_light_texture')
             layout.prop(wrd, 'arm_light_ies_texture')
             layout.prop(wrd, 'arm_light_clouds_texture')
         elif obj.type == 'SPEAKER':
@@ -312,6 +307,13 @@ class ArmoryExporterPanel(bpy.types.Panel):
         col.operator("arm_exporterlist.new_item", icon='ZOOMIN', text="")
         col.operator("arm_exporterlist.delete_item", icon='ZOOMOUT', text="")
         col.menu("arm_exporterlist_specials", icon='DOWNARROW_HLT', text="")
+
+        if len(wrd.arm_exporterlist) > 1:
+            col.separator()
+            op = col.operator("arm_exporterlist.move_item", icon='TRIA_UP', text="")
+            op.direction = 'UP'
+            op = col.operator("arm_exporterlist.move_item", icon='TRIA_DOWN', text="")
+            op.direction = 'DOWN'
 
         if wrd.arm_exporterlist_index >= 0 and len(wrd.arm_exporterlist) > 0:
             item = wrd.arm_exporterlist[wrd.arm_exporterlist_index]
@@ -712,6 +714,13 @@ class ArmRenderPathPanel(bpy.types.Panel):
         col.operator("arm_rplist.new_item", icon='ZOOMIN', text="")
         col.operator("arm_rplist.delete_item", icon='ZOOMOUT', text="")
 
+        if len(wrd.arm_rplist) > 1:
+            col.separator()
+            op = col.operator("arm_rplist.move_item", icon='TRIA_UP', text="")
+            op.direction = 'UP'
+            op = col.operator("arm_rplist.move_item", icon='TRIA_DOWN', text="")
+            op.direction = 'DOWN'
+
         if wrd.arm_rplist_index < 0 or len(wrd.arm_rplist) == 0:
             return
 
@@ -743,7 +752,6 @@ class ArmRenderPathPanel(bpy.types.Panel):
         self.prop(box, rpdat, 'rp_draw_order')
         self.prop(box, rpdat, 'arm_samples_per_pixel')
         self.prop(box, rpdat, 'arm_texture_filter')
-        self.prop(box, rpdat, 'arm_diffuse_model')
         self.prop(box, rpdat, 'rp_sss_state')
         col = self.column(box, enabled=(rpdat.rp_sss_state != 'Off'))
         self.prop(col, rpdat, 'arm_sss_width')
@@ -787,10 +795,11 @@ class ArmRenderPathPanel(bpy.types.Panel):
         row = self.row(col2, align=True, alignment='EXPAND')
         self.prop(row, rpdat, 'arm_soft_shadows_penumbra')
         self.prop(row, rpdat, 'arm_soft_shadows_distance')
+        self.prop(col, rpdat, 'arm_shadows_cubemap')
         self.prop(col, rpdat, 'arm_pcfsize')
 
 
-        self.label(layout, text='Global Illumination')
+        self.label(layout, text='Voxels')
         box = self.box(layout)
         row = self.row(box)
         self.prop(row, rpdat, 'rp_gi', expand=True)
@@ -799,9 +808,6 @@ class ArmRenderPathPanel(bpy.types.Panel):
         self.prop(col2, rpdat, 'arm_voxelgi_bounces')
         row2 = self.row(col2)
         self.prop(row2, rpdat, 'rp_voxelgi_relight')
-        self.prop(row2, rpdat, 'rp_voxelgi_hdr', text='HDR')
-        row2 = self.row(col2)
-        self.prop(row2, rpdat, 'arm_voxelgi_refraction', text='Refraction')
         self.prop(row2, rpdat, 'arm_voxelgi_shadows', text='Shadows')
         self.prop(col, rpdat, 'arm_voxelgi_cones')
         self.prop(col, rpdat, 'rp_voxelgi_resolution')
@@ -992,6 +998,13 @@ class ArmBakePanel(bpy.types.Panel):
         col.operator("arm_bakelist.delete_item", icon='ZOOMOUT', text="")
         col.menu("arm_bakelist_specials", icon='DOWNARROW_HLT', text="")
 
+        if len(scn.arm_bakelist) > 1:
+            col.separator()
+            op = col.operator("arm_bakelist.move_item", icon='TRIA_UP', text="")
+            op.direction = 'UP'
+            op = col.operator("arm_bakelist.move_item", icon='TRIA_DOWN', text="")
+            op.direction = 'DOWN'
+
         if scn.arm_bakelist_index >= 0 and len(scn.arm_bakelist) > 0:
             item = scn.arm_bakelist[scn.arm_bakelist_index]
             box = layout.box().column()
@@ -1075,6 +1088,13 @@ class ArmLodPanel(bpy.types.Panel):
         col.operator("arm_lodlist.new_item", icon='ZOOMIN', text="")
         col.operator("arm_lodlist.delete_item", icon='ZOOMOUT', text="")
 
+        if len(mdata.arm_lodlist) > 1:
+            col.separator()
+            op = col.operator("arm_lodlist.move_item", icon='TRIA_UP', text="")
+            op.direction = 'UP'
+            op = col.operator("arm_lodlist.move_item", icon='TRIA_DOWN', text="")
+            op.direction = 'DOWN'
+
         if mdata.arm_lodlist_index >= 0 and len(mdata.arm_lodlist) > 0:
             item = mdata.arm_lodlist[mdata.arm_lodlist_index]
             row = layout.row()
@@ -1115,6 +1135,13 @@ class ArmTilesheetPanel(bpy.types.Panel):
         col.operator("arm_tilesheetlist.new_item", icon='ZOOMIN', text="")
         col.operator("arm_tilesheetlist.delete_item", icon='ZOOMOUT', text="")
 
+        if len(wrd.arm_tilesheetlist) > 1:
+            col.separator()
+            op = col.operator("arm_tilesheetlist.move_item", icon='TRIA_UP', text="")
+            op.direction = 'UP'
+            op = col.operator("arm_tilesheetlist.move_item", icon='TRIA_DOWN', text="")
+            op.direction = 'DOWN'
+
         if wrd.arm_tilesheetlist_index >= 0 and len(wrd.arm_tilesheetlist) > 0:
             dat = wrd.arm_tilesheetlist[wrd.arm_tilesheetlist_index]
             row = layout.row()
@@ -1131,6 +1158,13 @@ class ArmTilesheetPanel(bpy.types.Panel):
             col = row.column(align=True)
             col.operator("arm_tilesheetactionlist.new_item", icon='ZOOMIN', text="")
             col.operator("arm_tilesheetactionlist.delete_item", icon='ZOOMOUT', text="")
+
+            if len(dat.arm_tilesheetactionlist) > 1:
+                col.separator()
+                op = col.operator("arm_tilesheetactionlist.move_item", icon='TRIA_UP', text="")
+                op.direction = 'UP'
+                op = col.operator("arm_tilesheetactionlist.move_item", icon='TRIA_DOWN', text="")
+                op.direction = 'DOWN'
 
             if dat.arm_tilesheetactionlist_index >= 0 and len(dat.arm_tilesheetactionlist) > 0:
                 adat = dat.arm_tilesheetactionlist[dat.arm_tilesheetactionlist_index]

@@ -78,20 +78,6 @@ class RenderPathForward {
 			}
 			#end
 
-			// #if rp_rendercapture
-			// {
-			// 	var t = new RenderTargetRaw();
-			// 	t.name = "capture";
-			// 	t.width = 0;
-			// 	t.height = 0;
-			// 	t.format = Inc.getRenderCaptureFormat();
-			// 	path.createRenderTarget(t);
-			// 	#if rp_compositornodes
-			// 	path.loadShader("shader_datas/copy_pass/copy_pass");
-			// 	#end
-			// }
-			// #end
-
 			#if ((rp_supersampling == 4) || (rp_antialiasing == "SMAA") || (rp_antialiasing == "TAA"))
 			{
 				var t = new RenderTargetRaw();
@@ -233,13 +219,9 @@ class RenderPathForward {
 
 	public static function commands() {
 
-		var hasLight = iron.Scene.active.lights.length > 0;
-
 		#if rp_shadowmap
 		{
-			if (hasLight) {
-				Inc.drawShadowMap(iron.Scene.active.lights[0]);
-			}
+			Inc.drawShadowMap();
 		}
 		#end
 
@@ -325,7 +307,7 @@ class RenderPathForward {
 
 		#if rp_shadowmap
 		{
-			if (hasLight) Inc.bindShadowMap();
+			Inc.bindShadowMap();
 		}
 		#end
 
@@ -352,27 +334,27 @@ class RenderPathForward {
 
 		#if rp_render_to_texture
 		{
-			#if rp_volumetriclight
-			{
-				path.setTarget("bufvola");
-				path.bindTarget("_main", "gbufferD");
-				Inc.bindShadowMap();
-				if (path.lightIsSun()) {
-					path.drawShader("shader_datas/volumetric_light_quad/volumetric_light_quad");
-				}
-				else {
-					path.drawLightVolume("shader_datas/volumetric_light/volumetric_light");
-				}
+			// #if rp_volumetriclight
+			// {
+			// 	path.setTarget("bufvola");
+			// 	path.bindTarget("_main", "gbufferD");
+			// 	Inc.bindShadowMap();
+			// 	if (path.lightIsSun()) {
+			// 		path.drawShader("shader_datas/volumetric_light_quad/volumetric_light_quad");
+			// 	}
+			// 	else {
+			// 		path.drawLightVolume("shader_datas/volumetric_light/volumetric_light");
+			// 	}
 
-				path.setTarget("bufvolb");
-				path.bindTarget("bufvola", "tex");
-				path.drawShader("shader_datas/blur_bilat_pass/blur_bilat_pass_x");
+			// 	path.setTarget("bufvolb");
+			// 	path.bindTarget("bufvola", "tex");
+			// 	path.drawShader("shader_datas/blur_bilat_pass/blur_bilat_pass_x");
 
-				path.setTarget("lbuf");
-				path.bindTarget("bufvolb", "tex");
-				path.drawShader("shader_datas/blur_bilat_blend_pass/blur_bilat_blend_pass_y");
-			}
-			#end
+			// 	path.setTarget("lbuf");
+			// 	path.bindTarget("bufvolb", "tex");
+			// 	path.drawShader("shader_datas/blur_bilat_blend_pass/blur_bilat_blend_pass_y");
+			// }
+			// #end
 			
 			#if rp_bloom
 			{
@@ -416,7 +398,7 @@ class RenderPathForward {
 			}
 			#end
 
-			#if ((rp_supersampling == 4) || (rp_rendercapture))
+			#if (rp_supersampling == 4)
 			var framebuffer = "buf";
 			#else
 			var framebuffer = "";
@@ -434,8 +416,6 @@ class RenderPathForward {
 			}
 			#end
 
-			path.bindTarget("lbuf", "tex");
-
 			#if rp_compositordepth
 			{
 				path.bindTarget("_main", "gbufferD");
@@ -444,10 +424,12 @@ class RenderPathForward {
 
 			#if rp_compositornodes
 			{
+				path.bindTarget("lbuf", "tex");
 				path.drawShader("shader_datas/compositor_pass/compositor_pass");
 			}
 			#else
 			{
+				path.bindTarget("lbuf", "tex");
 				path.drawShader("shader_datas/copy_pass/copy_pass");
 			}
 			#end
@@ -496,21 +478,11 @@ class RenderPathForward {
 
 			#if (rp_supersampling == 4)
 			{
-				// #if rp_rendercapture
-				// var finalTarget = "capture";
-				// #else
 				var finalTarget = "";
-				// #end
 				path.setTarget(finalTarget);
 				path.bindTarget(framebuffer, "tex");
 				path.drawShader("shader_datas/supersample_resolve/supersample_resolve");
 			}
-			// #elseif (rp_rendercapture)
-			// {
-			// 	path.setTarget("capture");
-			// 	path.bindTarget(framebuffer, "tex");
-			// 	path.drawShader("shader_datas/copy_pass/copy_pass");
-			// }
 			#end
 		}
 		#end

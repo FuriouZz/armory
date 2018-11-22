@@ -22,14 +22,6 @@ def add_world_defs():
     if rpdat.rp_hdr == False:
         wrd.world_defs += '_LDR'
 
-    # Alternative models
-    if rpdat.arm_diffuse_model == 'OrenNayar':
-        wrd.world_defs += '_OrenNayar'
-
-    # TODO: Light texture test..
-    if wrd.arm_light_texture != '':
-        wrd.world_defs += '_LightColTex'
-
     if wrd.arm_light_ies_texture != '':
         wrd.world_defs += '_LightIES'
         assets.add_embedded_data('iestexture.png')
@@ -52,26 +44,17 @@ def add_world_defs():
         elif rpdat.rp_gi == 'Voxel AO':
             voxelao = True
     # Shadows
-    if rpdat.rp_shadowmap == 'Off':
-        wrd.world_defs += '_NoShadows'
-        assets.add_khafile_def('arm_no_shadows')
-    else:
+    if rpdat.rp_shadowmap != 'Off':
+        wrd.world_defs += '_ShadowMap'
         if rpdat.rp_shadowmap_cascades != '1':
             if voxelgi:
                 log.warn('Disabling shadow cascades - Voxel GI does not support cascades yet')
             else:
                 wrd.world_defs += '_CSM'
                 assets.add_khafile_def('arm_csm')
+        if rpdat.arm_shadows_cubemap:
+            wrd.world_defs += '_ShadowMapCube'
     # SS
-    # if rpdat.rp_dfrs:
-    #     wrd.world_defs += '_DFRS'
-    #     assets.add_khafile_def('arm_sdf')
-    # if rpdat.rp_dfao:
-    #     wrd.world_defs += '_DFAO'
-    #     assets.add_khafile_def('arm_sdf')
-    # if rpdat.rp_dfgi:
-    #     wrd.world_defs += '_DFGI'
-    #     assets.add_khafile_def('arm_sdf')
     if rpdat.rp_ssgi == 'RTGI' or rpdat.rp_ssgi == 'RTAO':
         if rpdat.rp_ssgi == 'RTGI':
             wrd.world_defs += '_RTGI'
@@ -98,11 +81,7 @@ def add_world_defs():
                 assets.add_khafile_def('rp_gi_bounces={0}'.format(rpdat.arm_voxelgi_bounces))
                 assets.add_shader_external(arm.utils.get_sdk_path() + '/armory/Shaders/voxel_bounce/voxel_bounce.comp.glsl')
             if rpdat.arm_voxelgi_shadows:
-                wrd.world_defs += '_VoxelGIDirect'
                 wrd.world_defs += '_VoxelGIShadow'
-            if rpdat.arm_voxelgi_refraction:
-                wrd.world_defs += '_VoxelGIDirect'
-                wrd.world_defs += '_VoxelGIRefract'
             if rpdat.rp_voxelgi_relight:
                 assets.add_khafile_def('rp_voxelgi_relight')
         elif voxelao:
@@ -114,18 +93,24 @@ def add_world_defs():
     if arm.utils.get_legacy_shaders() and not state.is_viewport:
         wrd.world_defs += '_Legacy'
 
-    # Area lights
+    # Light defines
     lights = bpy.data.lights if bpy.app.version >= (2, 80, 1) else bpy.data.lamps
     for light in lights:
-        if light.type == 'AREA':
+        if light.type == 'AREA' and '_LTC' not in wrd.world_defs:
             wrd.world_defs += '_LTC'
             assets.add_khafile_def('arm_ltc')
-            break
+        if light.type == 'SUN' and '_Sun' not in wrd.world_defs:
+            wrd.world_defs += '_Sun'
+        if light.type == 'POINT' or light.type == 'SPOT':
+            if '_Clusters' not in wrd.world_defs:
+                wrd.world_defs += '_Clusters'
+                assets.add_khafile_def('arm_clusters')
+            if light.type == 'SPOT' and '_Spot' not in wrd.world_defs:
+                wrd.world_defs += '_Spot'
+                assets.add_khafile_def('arm_spot')
 
     if '_Rad' in wrd.world_defs or '_VoxelGI' in wrd.world_defs:
         wrd.world_defs += '_Brdf'
-    if '_Brdf' in wrd.world_defs or '_VoxelAO' in wrd.world_defs:
-        wrd.world_defs += '_IndPos'
 
 def build():
     rpdat = arm.utils.get_rp()
@@ -163,9 +148,9 @@ def build():
             assets.add_embedded_data('noise256.png')
 
     if rpdat.rp_renderer == 'Deferred' and not rpdat.rp_compositornodes:
-            assets.add_shader_pass('copy_pass')
-    if rpdat.rp_renderer == 'Forward' and not rpdat.rp_compositornodes and rpdat.rp_render_to_texture:
-            assets.add_shader_pass('copy_pass')
+        assets.add_shader_pass('copy_pass')
+    if rpdat.rp_renderer == 'Forward' and not rpdat.rp_compositornodes:
+        assets.add_shader_pass('copy_pass')
 
     if rpdat.rp_render_to_texture:
         assets.add_khafile_def('rp_render_to_texture')
@@ -261,12 +246,8 @@ def build():
             assets.add_khafile_def('rp_gi={0}'.format(rpdat.rp_gi))        
             assets.add_khafile_def('rp_voxelgi_resolution={0}'.format(rpdat.rp_voxelgi_resolution))
             assets.add_khafile_def('rp_voxelgi_resolution_z={0}'.format(rpdat.rp_voxelgi_resolution_z))
-            if rpdat.rp_voxelgi_hdr:
-                assets.add_khafile_def('rp_voxelgi_hdr')
             if rpdat.arm_voxelgi_shadows:
                 assets.add_khafile_def('rp_voxelgi_shadows')
-            if rpdat.arm_voxelgi_refraction:
-                assets.add_khafile_def('rp_voxelgi_refraction')
         else:
             log.warn('Disabling Voxel GI - unsupported target - use Krom instead')
 
@@ -286,9 +267,7 @@ def build():
             assets.add_shader_pass('ssgi_blur_pass')
 
     if rpdat.rp_renderer == 'Deferred':
-        assets.add_shader_pass('deferred_indirect')
         assets.add_shader_pass('deferred_light')
-        assets.add_shader_pass('deferred_light_quad')
     
     if bpy.app.version >= (2, 80, 1) and len(bpy.data.lightprobes) > 0:
         wrd.world_defs += '_Probes'
@@ -297,14 +276,14 @@ def build():
         assets.add_shader_pass('probe_cubemap')
         assets.add_shader_pass('copy_pass')
 
-    if rpdat.rp_volumetriclight:
-        assets.add_khafile_def('rp_volumetriclight')
-        assets.add_shader_pass('volumetric_light_quad')
-        assets.add_shader_pass('volumetric_light')
-        assets.add_shader_pass('blur_bilat_pass')
-        assets.add_shader_pass('blur_bilat_blend_pass')
-        assets.add(assets_path + 'blue_noise64.png')
-        assets.add_embedded_data('blue_noise64.png')
+    # if rpdat.rp_volumetriclight:
+    #     assets.add_khafile_def('rp_volumetriclight')
+    #     assets.add_shader_pass('volumetric_light_quad')
+    #     assets.add_shader_pass('volumetric_light')
+    #     assets.add_shader_pass('blur_bilat_pass')
+    #     assets.add_shader_pass('blur_bilat_blend_pass')
+    #     assets.add(assets_path + 'blue_noise64.png')
+    #     assets.add_embedded_data('blue_noise64.png')
 
     if rpdat.rp_decals:
         assets.add_khafile_def('rp_decals')
@@ -349,19 +328,19 @@ def build():
     if rpdat.rp_dynres:
         assets.add_khafile_def('rp_dynres')
 
-    if rpdat.arm_soft_shadows == 'On':
-        if rpdat.rp_shadowmap_cascades == '1':
-            assets.add_shader_pass('dilate_pass')
-            assets.add_shader_pass('visibility_pass')
-            assets.add_shader_pass('blur_shadow_pass')
-            assets.add_khafile_def('rp_soft_shadows')
-            wrd.world_defs += '_SoftShadows'
-            if rpdat.arm_soft_shadows_penumbra != 1:
-                wrd.world_defs += '_PenumbraScale'
-        else:
-            log.warn('Disabling soft shadows - "Armory Render Path - Cascades" requires to be set to 1 for now')
+    # if rpdat.arm_soft_shadows == 'On':
+    #     if rpdat.rp_shadowmap_cascades == '1':
+    #         assets.add_shader_pass('dilate_pass')
+    #         assets.add_shader_pass('visibility_pass')
+    #         assets.add_shader_pass('blur_shadow_pass')
+    #         assets.add_khafile_def('rp_soft_shadows')
+    #         wrd.world_defs += '_SoftShadows'
+    #         if rpdat.arm_soft_shadows_penumbra != 1:
+    #             wrd.world_defs += '_PenumbraScale'
+    #     else:
+    #         log.warn('Disabling soft shadows - "Armory Render Path - Cascades" requires to be set to 1 for now')
 
-    gbuffer2_direct = '_SSS' in wrd.world_defs or '_Hair' in wrd.world_defs or rpdat.arm_voxelgi_refraction
+    gbuffer2_direct = '_SSS' in wrd.world_defs or '_Hair' in wrd.world_defs
     gbuffer2 = '_Veloc' in wrd.world_defs or gbuffer2_direct
     if gbuffer2:
         assets.add_khafile_def('rp_gbuffer2')
