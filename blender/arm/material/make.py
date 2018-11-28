@@ -40,6 +40,10 @@ def parse(material, mat_data, mat_users, mat_armusers):
         elem['name'] = 'nor'
         elem['size'] = 3
         con['vertex_structure'].append(elem)
+        elem = {}
+        elem['name'] = 'tex'
+        elem['size'] = 2
+        con['vertex_structure'].append(elem)
         sd['contexts'].append(con)
         shader_data_name = material.arm_custom_material
         bind_constants = {}
