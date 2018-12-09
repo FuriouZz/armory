@@ -608,7 +608,7 @@ class ArmoryExporter:
                             boneRef[1]["objectType"] = NodeTypeBone
 
     def export_bone_transform(self, armature, bone, scene, o, action):
-        
+
         pose_bone = armature.pose.bones.get(bone.name)
         # if pose_bone != None:
         #     transform = pose_bone.matrix.copy()
@@ -1528,7 +1528,7 @@ class ArmoryExporter:
                         break
             o['index_arrays'].append(ia)
         # Sort by material index
-        # o['index_arrays'] = sorted(o['index_arrays'], key=lambda k: k['material']) 
+        # o['index_arrays'] = sorted(o['index_arrays'], key=lambda k: k['material'])
 
         # Make tangents
         if has_tang:
@@ -1801,7 +1801,7 @@ class ArmoryExporter:
             return ar
         else:
             return [0.051, 0.051, 0.051, 1.0]
-            
+
     def extract_projection(self, o, proj, with_planes=True):
         a = proj[0][0]
         b = proj[1][1]
@@ -2507,7 +2507,7 @@ class ArmoryExporter:
                         instanced_data.append(scale.y)
                         instanced_data.append(scale.z)
                 break
-            
+
             # Instance render groups with same children?
             # elif bobject.dupli_type == 'GROUP' and bobject.dupli_group != None:
             #     instanced_type = 1
