@@ -41,6 +41,10 @@ def parse(material, mat_data, mat_users, mat_armusers):
         elem['size'] = 3
         con['vertex_structure'].append(elem)
         elem = {}
+        elem['name'] = 'col'
+        elem['size'] = 3
+        con['vertex_structure'].append(elem)
+        elem = {}
         elem['name'] = 'tex'
         elem['size'] = 2
         con['vertex_structure'].append(elem)
